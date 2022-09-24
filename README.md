@@ -1,21 +1,24 @@
-# Signal TLS Proxy
+# Signal TLS Proxy for Docker Swarm and Traefik
 
-To run a Signal TLS proxy, you will need a host that has ports 80 and 443 available and a domain name that points to that host.
+To run this Signal TLS proxy, you will need the following setup:
+- a host that has ports 80 and 443 available
+- a domain name that points to that host
+- a [Docker Swarm Node](https://docs.docker.com/engine/swarm/) running on that host
+- a [Traefik reverse proxy](https://traefik.io/) running on that node
+- valid TLS certificates for that domain name
 
-1. Install docker and docker-compose (`apt update && apt install docker docker-compose`)
-1. Ensure your current user has access to docker (`adduser $USER docker`)
+## Setup
 1. Clone this repository
-1. `./init-certificate.sh`
-1. `docker-compose up --detach`
+2. Modify the `docker-stack.yml` file to use your domain name and traefik labels
+3. Run `docker stack deploy -c docker-stack.yml signal-tls-proxy`
+4. Run `docker service logs -f signal-tls-proxy` to see the logs
+5. Wait for the service to start
 
 Your proxy is now running! You can share this with the URL `https://signal.tube/#<your_host_name>`
 
-## Updating from a previous version
-
-If you've previously run a proxy, please update to the most recent version by pulling the most recent changes from `main`, then restarting your Docker containers:
-
-```shell
-git pull
-docker-compose down
-docker-compose up --detach
-```
+## Setup without Docker Swarm
+If you don't want to use Docker Swarm, you can run the proxy with Docker Compose:
+1. Clone this repository
+2. Modify the `docker-compose.yml` file to use your domain name and traefik labels
+3. Run `docker-compose up -d`
+4. Run `docker-compose logs -f` to see the logs

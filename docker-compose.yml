@@ -1,27 +1,26 @@
-version: '3'
+version: '3.7'
 
 services:
-  nginx-terminate:
-    build: ./nginx-terminate/
-    restart: unless-stopped
-    volumes:
-      - ./data/nginx-terminate:/etc/nginx/conf.d
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
-    ports:
-      - "443:443"
-      - "80:80"
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; /opt/nginx/sbin/nginx -s reload; done & /opt/nginx/sbin/nginx -c /etc/nginx/conf.d/nginx.conf -g \"daemon off;\"'"
   nginx-relay:
-    build: ./nginx-relay/
+    image: nginx:alpine
     restart: unless-stopped
+
     volumes:
-      - ./data/nginx-relay:/etc/nginx/conf.d
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; /opt/nginx/sbin/nginx -s reload; done & /opt/nginx/sbin/nginx -c /etc/nginx/conf.d/nginx.conf -g \"daemon off;\"'"
-  certbot:
-    image: certbot/certbot
-    restart: unless-stopped
-    volumes:
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+
+    networks:
+      - proxy
+
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.docker.network=proxy'
+      - 'traefik.tcp.routers.signal-proxy.rule=HostSNI("s1gn4l.example.com")'
+      - 'traefik.tcp.routers.signal-proxy.entrypoints=https'
+      - 'traefik.tcp.routers.signal-proxy.tls=true'
+      - 'traefik.tcp.routers.signal-proxy.tls.certresolver=letsencrypt'
+      - 'traefik.tcp.routers.signal-proxy.service=nginx-relay'
+      - 'traefik.tcp.services.nginx-relay.loadbalancer.server.port=4433'
+
+networks:
+  proxy:
+    external: true

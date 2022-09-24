@@ -1,0 +1,34 @@
+version: '3.7'
+
+services:
+  nginx-relay:
+    image: nginx:alpine
+    configs:
+      - source: nginx
+        target: /etc/nginx/nginx.conf
+
+    networks:
+      - proxy
+
+    deploy:
+      restart_policy:
+        condition: any
+        delay: 1m
+
+      labels:
+        - 'traefik.enable=true'
+        - 'traefik.docker.network=proxy'
+        - 'traefik.tcp.routers.signal-proxy.rule=HostSNI("s1gn4l.example.com")'
+        - 'traefik.tcp.routers.signal-proxy.entrypoints=https'
+        - 'traefik.tcp.routers.signal-proxy.tls=true'
+        - 'traefik.tcp.routers.signal-proxy.tls.certresolver=letsencrypt'
+        - 'traefik.tcp.routers.signal-proxy.service=nginx-relay'
+        - 'traefik.tcp.services.nginx-relay.loadbalancer.server.port=4433'
+
+configs:
+  nginx:
+    file: ./nginx.conf
+
+networks:
+  proxy:
+    external: true
